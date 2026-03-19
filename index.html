@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Property Testing i TDD: Zgrany Duet</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/solarized.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css">
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+/* Custom CSS layer for Solarized theme */
+
+:root {
+  --solarized-base03: #002b36;
+  --solarized-base02: #073642;
+  --solarized-base01: #586e75;
+  --solarized-base00: #657b83;
+  --solarized-base0: #839496;
+  --solarized-base1: #93a1a1;
+  --solarized-base2: #eee8d5;
+  --solarized-base3: #fdf6e3;
+  --solarized-yellow: #b58900;
+  --solarized-orange: #cb4b16;
+  --solarized-red: #dc322f;
+  --solarized-magenta: #d33682;
+  --solarized-violet: #6c71c4;
+  --solarized-blue: #268bd2;
+  --solarized-cyan: #2aa198;
+  --solarized-green: #859900;
+}
+
+/* Enhanced headings */
+.reveal h1 {
+  font-weight: 600;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reveal h2 {
+  color: var(--solarized-blue);
+  margin-bottom: 0.5em;
+}
+
+.reveal h3 {
+  color: var(--solarized-cyan);
+}
+
+/* Code blocks */
+.reveal pre {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid var(--solarized-blue);
+  margin: 1em 0;
+  width: 100%;
+  font-size: 0.65em;
+}
+
+.reveal code {
+  background-color: var(--solarized-base02);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+/* Lists */
+.reveal ul, .reveal ol {
+  margin: 0.5em 0;
+}
+
+.reveal li {
+  margin: 0.3em 0;
+}
+
+/* DaisyUI steps override — prevent Reveal.js list styles from breaking the layout */
+.reveal ul.steps {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reveal ul.steps li.step {
+  display: grid;
+  margin: 0;
+  padding: 0;
+}
+
+/* DaisyUI timeline override */
+.reveal ul.timeline {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reveal ul.timeline li {
+  margin: 0;
+  padding: 0;
+}
+
+/* Emphasis and highlighting */
+.reveal em {
+  color: var(--solarized-magenta);
+  font-style: italic;
+}
+
+.reveal strong {
+  color: var(--solarized-orange);
+  font-weight: bold;
+}
+
+.reveal .highlight {
+  background-color: var(--solarized-yellow);
+  color: var(--solarized-base03);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+
+/* Links */
+.reveal a {
+  color: var(--solarized-blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.reveal a:hover {
+  color: var(--solarized-cyan);
+  text-decoration: underline;
+}
+
+/* Blockquotes */
+.reveal blockquote {
+  border-left: 5px solid var(--solarized-cyan);
+  padding-left: 1em;
+  font-style: italic;
+  background-color: rgba(42, 161, 152, 0.1);
+  margin: 1em 0;
+}
+
+/* Tables */
+.reveal table {
+  border-collapse: collapse;
+  margin: 1em auto;
+}
+
+.reveal table th {
+  background-color: var(--solarized-blue);
+  color: var(--solarized-base3);
+  font-weight: bold;
+  padding: 0.5em 1em;
+}
+
+.reveal table td {
+  padding: 0.5em 1em;
+  border-bottom: 1px solid var(--solarized-base1);
+}
+
+.reveal table tr:hover {
+  background-color: rgba(131, 148, 150, 0.1);
+}
+
+/* Two-column layout */
+.reveal .columns {
+  display: flex;
+  gap: 2em;
+  align-items: stretch;
+}
+
+.reveal .column {
+  flex: 1;
+}
+
+/* Fragment animations */
+.reveal .fragment.highlight-current-blue.current-fragment {
+  color: var(--solarized-blue);
+}
+
+.reveal .fragment.highlight-current-green.current-fragment {
+  color: var(--solarized-green);
+}
+
+/* Image containers */
+.reveal .image-container {
+  text-align: center;
+  margin: 1em 0;
+}
+
+.reveal .image-container img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.reveal .image-caption {
+  font-size: 0.8em;
+  color: var(--solarized-base01);
+  margin-top: 0.5em;
+}
+
+/* Section title slides */
+.reveal .section-title {
+  text-align: center;
+  padding: 2em;
+}
+
+.reveal .section-title h1 {
+  color: var(--solarized-blue);
+  font-size: 3em;
+  margin-bottom: 0.5em;
+}
+
+.reveal .section-title h2 {
+  color: var(--solarized-base01);
+  font-weight: 300;
+  font-size: 1.5em;
+}
+
+/* Footer or small text */
+.reveal .small-text {
+  font-size: 0.7em;
+  color: var(--solarized-base01);
+}
+
+/* Progress bar customization */
+.reveal .progress {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.reveal .progress span {
+  background: var(--solarized-blue);
+}
+
+/* Controls customization */
+.reveal .controls {
+  color: var(--solarized-blue);
+}
+
+/* Bento grid layout */
+.reveal .bento-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+  margin: 0.5em 0;
+}
+
+.reveal .bento-grid.three-columns {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.reveal .bento-card {
+  background-color: rgba(38, 139, 210, 0.08);
+  border: 1px solid var(--solarized-base1);
+  border-radius: 8px;
+  padding: 0.8em 1em;
+  text-align: left;
+}
+
+.reveal .bento-card h3 {
+  font-size: 0.85em;
+  margin: 0 0 0.3em 0;
+}
+
+.reveal .bento-card p {
+  font-size: 0.7em;
+  margin: 0;
+  color: var(--solarized-base00);
+}
+
+/* Visual split - override columns for tighter control */
+.reveal .vs-left, .reveal .vs-right {
+  flex: 1;
+  text-align: left;
+}
+
+.reveal .vs-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Comparison boxes */
+.reveal .compare-box {
+  background-color: rgba(42, 161, 152, 0.1);
+  border: 2px solid var(--solarized-cyan);
+  border-radius: 8px;
+  padding: 1.2em;
+  text-align: center;
+  font-size: 1.1em;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.reveal .compare-box.alt {
+  background-color: rgba(38, 139, 210, 0.1);
+  border-color: var(--solarized-blue);
+}
+
+/* Shrink code font for dense slides */
+.reveal pre code {
+  font-size: 0.55em;
+  line-height: 1.4;
+}
+
+/* Bento grid with 5 items: make last one span full width */
+.reveal .bento-grid.five-items > :nth-child(5) {
+  grid-column: 1 / -1;
+}
+
+/* Combinatorial note styling */
+.reveal .combo-note {
+  margin-top: 0.5em;
+  font-size: 0.6em;
+  color: var(--solarized-base01);
+  font-style: italic;
+}
+  </style>
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+
+    <!-- Slide 0: WDI title slide -->
+    <!-- <section data-background-image="title_slide.svg" data-background-size="contain" data-background-color="#1b0532"> -->
+    <!-- </section> -->
+
+
+    <!-- Slide 1: Title -->
+    <section class="section-title">
+      <h1>Od przykładów do właściwości</h1>
+      <h2>Property Testing w TDD</h2>
+      <p class="small-text">Michał Dąbrowski</p>
+      <aside class="notes">Witajcie wszyscy. Dzisiaj porozmawiamy o technice testowania, która fundamentalnie zmieniła to, jak myślę o pisaniu testów i pracy w TDD.</aside>
+    </section>
+
+    <!-- Slide 3: The Unit Test Safety Net (visual-split) -->
+    <section>
+      <h2>Siatka bezpieczeństwa testów jednostkowych</h2>
+      <div class="bento-grid three-columns">
+        <div class="bento-card">
+          <h3>Oparte na przykładach</h3>
+          <p>Testy jednostkowe weryfikują <strong>konkretne</strong> pary wejście/wyjście.</p>
+        </div>
+        <div class="bento-card">
+          <h3>Sami wymyślamy przykłady</h3>
+          <p>Testujemy to, co potrafimy sobie <em>wyobrazić</em>, a niekoniecznie to, co użytkownicy naprawdę zrobią.</p>
+        </div>
+        <div class="bento-card">
+          <h3>Zarzucamy sieć</h3>
+          <p>Każdy test jest węzłem w sieci i mamy nadzieję, że tą siecią złapiemy wszystkie błędy.</p>
+        </div>
+      </div>
+      <aside class="notes">Testy jednostkowe są złotym standardem. Ale mają jedną dużą wadę: są oparte na przykładach. Zarzucamy sieć, a jej gęstość zależy wyłącznie od tego, ile przykładów mamy czas i cierpliwość napisać. A co, jeśli moglibyśmy przetestować WSZYSTKIE poprawne wejścia?</aside>
+    </section>
+
+    <!-- Slide 4: The Problem with Examples (bento-grid) -->
+    <section>
+      <h2>Problem z przykładami</h2>
+      <div class="bento-grid">
+        <div class="bento-card">
+          <h3>Sami wymyślamy przykłady</h3>
+          <p>Musimy samodzielnie wymyślić przykłady, a to nie zawsze jest proste.</p>
+        </div>
+        <div class="bento-card">
+          <h3>Koszt utrzymania</h3>
+          <p>Gęsta sieć oznacza dużo kodu do napisania, przeczytania i utrzymania.</p>
+        </div>
+        <div class="bento-card">
+          <h3>Martwe pola</h3>
+          <p>Ludzie (i LLM-y) mają uprzedzenia poznawcze i łatwo przeoczają edge case'y.</p>
+        </div>
+        <div class="bento-card" style="background-color:rgba(38,139,210,0.15); border:2px solid var(--solarized-blue);">
+          <h3>Często nie zależy nam na konkretnych przykładach</h3>
+          <p>Chcemy wiedzieć, czy funkcja działa <em>ogólnie</em>.</p>
+        </div>
+      </div>
+      <aside class="notes">Nawet gdy piszemy dobre przykłady, często nie zależy nam na konkretnych punktach danych. Tak naprawdę chcemy sprawdzić, czy dana funkcja ogólnie zachowuje się poprawnie. A jeśli spróbujemy stworzyć bardzo gęstą sieć, kończymy z ogromną ilością kodu do utrzymania. Właśnie tutaj wchodzi Property Testing.</aside>
+    </section>
+
+    <!-- Slide 5: Property Testing: The Paradigm Shift (visual-split) -->
+    <section>
+      <h2>Property Testing: zmiana paradygmatu</h2>
+      <div class="columns">
+        <div class="column">
+          <div class="compare-box">
+            <p><strong>Oparte na przykładach</strong></p>
+            <p style="font-size:0.8em;">Dla A oczekuj B</p>
+          </div>
+        </div>
+        <div class="column">
+          <div class="compare-box alt">
+            <p><strong>Oparte na właściwościach</strong></p>
+            <p style="font-size:0.8em;">Dla <span class="highlight">WSZYSTKICH</span> poprawnych wejść ta właściwość zachodzi.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">Property Testing odwraca sposób myślenia. Zamiast mówić: "Dla A oczekuj B", mówimy: "Dla WSZYSTKICH poprawnych wejść ta właściwość powinna zachodzić." Przestajemy skupiać się na pojedynczych przykładach, a zaczynamy na niezmiennikach. Zobaczmy, jak to wygląda w praktyce.</aside>
+    </section>
+
+    <!-- Slide 6: How Property Testing Works (progressive-disclosure) -->
+    <section>
+      <h2>Jak działa Property Testing</h2>
+      <ol>
+        <li class="fragment">
+          <strong>Zdefiniuj Arbitrary</strong><br>
+          <span style="font-size:0.85em;">Opisz kształt swoich danych wejściowych.</span>
+        </li>
+        <li class="fragment">
+          <strong>Wygeneruj przykłady</strong><br>
+          <span style="font-size:0.85em;">Biblioteka tworzy setki wejść, z naciskiem na edge case'y.</span>
+        </li>
+        <li class="fragment">
+          <strong>Sprawdź właściwość</strong><br>
+          <span style="font-size:0.85em;">Dla każdego wygenerowanego wejścia niezmiennik musi zachodzić.</span>
+        </li>
+      </ol>
+      <aside class="notes">Mechanika jest prosta. Najpierw definiujemy szablon wejścia, nazywany Arbitrary. Potem biblioteka generuje ogromną liczbę przykładów. Na końcu uruchamia każdy z nich przez nasz test. To generowanie nie jest przypadkowe; silnik aktywnie poluje na przypadki brzegowe. Uczyńmy to bardziej konkretnym na prawdziwym przykładzie.</aside>
+    </section>
+
+    <!-- Slide 7: Meet slugify() (code) -->
+    <section>
+      <h2>Przykład: slugify()</h2>
+      <div class="bento-card" style="display:flex; align-items:center; gap:1em; margin-bottom:0.8em;">
+        <span style="font-size:1.6em;">🔗</span>
+        <p style="margin:0;"><code>slugify()</code> — mały utility, który zamienia dowolny string w slug przyjazny dla URL-i</p>
+      </div>
+      <pre><code class="language-typescript" data-line-numbers="1-7|3|4|5|6|7">export function slugify(text: string): string {
+  return text
+    .toLowerCase()                   // Convert to lowercase
+    .trim()                          // Remove leading/trailing whitespace
+    .replace(/[^\w\s-]/g, '')        // Remove non-word chars
+    .replace(/[\s_-]+/g, '-')        // Spaces/underscores to single dash
+    .replace(/^-+|-+$/g, '');        // Remove leading/trailing dashes
+}</code></pre>
+      <aside class="notes">Oto prosta funkcja slugify. Bierze string i zwraca slug przyjazny dla URL-a. Małe litery, bez znaków specjalnych, myślniki zamiast spacji. Dość proste, ale jak przetestować to porządnie? Spójrzcie na wymagania: one SĄ właściwościami.</aside>
+    </section>
+
+    <!-- Slide 9: First Property Test: No Whitespace (code) -->
+    <section>
+      <h2>Wymagania są właściwościami</h2>
+      <p>Wymagania definiują <strong>niezmienniki wyjścia</strong>: warunki, które muszą zachodzić dla każdego poprawnego wejścia. To sprawia, że można je bezpośrednio przetłumaczyć na właściwości.</p>
+      <pre><code class="language-typescript" data-line-numbers="1-9|3|4|5|6|7">import fc from 'fast-check';
+
+test('output should never contain whitespace', () => {
+  fc.assert(
+    fc.property(fc.string(), (originalString) => {
+      const slug = slugify(originalString);
+      return !/\s/.test(slug);
+    })
+  );
+});</code></pre>
+      <aside class="notes">Sam test jest zwięzły. Ale podczas wykonania fast-check wygeneruje setki stringów wejściowych, w tym puste stringi, stringi z tabami i nowymi liniami, emoji, bardzo długie teksty, i sprawdzi, czy właściwość zachodzi dla każdego z nich. Ten jeden test zastępuje dziesiątki ręcznie zapisanych przykładów. Ale fast-check robi więcej niż tylko losowe generowanie stringów.</aside>
+    </section>
+
+    <!-- Slide 10: More Slugify Properties (code) -->
+    <!-- <section>
+      <h2>Więcej właściwości dla slugify</h2>
+      <pre><code class="language-typescript" data-line-numbers="1-7|9-15">// Idempotence: slugify(slugify(x)) === slugify(x)
+it('should be idempotent', () => {
+  fc.assert(
+    fc.property(fc.string(), (text) => {
+      expect(slugify(text)).toBe(slugify(slugify(text)));
+    })
+  );
+});
+
+// Case insensitivity: same result regardless of input case
+it('should be case insensitive', () => {
+  fc.assert(
+    fc.property(fc.string(), (text) => {
+      expect(slugify(text.toLowerCase()))
+        .toBe(slugify(text.toUpperCase()));
+    })
+  );
+});</code></pre>
+      <aside class="notes">Oto dwie kolejne piękne właściwości. Idempotencja oznacza, że zastosowanie slugify dwa razy daje ten sam wynik co zastosowanie go raz. Niezależność od wielkości liter oznacza, że wejścia zapisane małymi i wielkimi literami dają ten sam slug. To ogólne prawdy o slugify, sprawdzone na setkach losowych wejść. Co się dzieje, gdy jeden z tych testów nie przejdzie?</aside>
+    </section> -->
+
+    <!-- Slide 11: Smart Generation (bento-grid) -->
+    <section>
+      <h2>Losowe, ale nie bezmyślne</h2>
+      <div class="bento-grid">
+        <div class="bento-card">
+          <h3>Puste stringi</h3>
+          <p>Oraz stringi z bajtami null</p>
+        </div>
+        <div class="bento-card">
+          <h3>Emoji i non-ASCII</h3>
+          <p>Unicode'owe edge case'y</p>
+        </div>
+        <div class="bento-card">
+          <h3>Bardzo długie stringi</h3>
+          <p>Testowanie granic wytrzymałości</p>
+        </div>
+        <div class="bento-card">
+          <h3>Wartości graniczne</h3>
+          <p>Maks/min integerów, długość zero</p>
+        </div>
+      </div>
+      <aside class="notes">Możecie się zastanawiać, czy to po prostu Math.random. Nie. Biblioteki do Property Testing używają generowania ukierunkowanego. Silnik wie, że błędy zwykle chowają się w ciemnych zakamarkach, więc celowo próbuje takich problematycznych wzorców. A kiedy test nie przejdzie, biblioteka robi jeszcze coś sprytnego.</aside>
+    </section>
+
+    <!-- Slide 12: Shrinking (progressive-disclosure) -->
+    <section>
+      <h2>Shrinking: znajdowanie minimalnego przypadku</h2>
+      <div class="columns" style="margin-bottom:0.6em;">
+        <div class="column">
+          <div class="bento-card" style="border-color:var(--solarized-red);">
+            <h3>Początkowe niepowodzenie</h3>
+            <pre style="margin:0.4em 0 0;"><code class="language-text">" ¥ \t \n © £ ÿ 🚀 ∆ … "</code></pre>
+            <p style="margin-top:0.4em;">Chaotyczny string 100-znakowy. Co dokładnie spowodowało błąd?</p>
+          </div>
+        </div>
+        <div class="column">
+          <div class="bento-card" style="border-color:var(--solarized-green);">
+            <h3>Po shrinking</h3>
+            <pre style="margin:0.4em 0 0;"><code class="language-text">"\t"</code></pre>
+            <p style="margin-top:0.4em;">Minimalny reprodukowalny przypadek: nasz kod nie obsługuje tabów</p>
+          </div>
+        </div>
+      </div>
+      <ul class="steps steps-horizontal" style="font-size:0.65em; width:100%;">
+        <li class="step step-error">Test nie przechodzi - 100 znaków</li>
+        <li class="step step-warning">50 znaków</li>
+        <li class="step step-warning">10 znaków</li>
+        <li class="step step-warning">3 znaki</li>
+        <li class="step step-success">Minimum: "\t"</li>
+      </ul>
+      <aside class="notes">Kiedy test nie przechodzi, losowe wejście może być trudne do odczytania. Czy chodziło o tab? Nową linię? Długość? Biblioteka rozwiązuje to przez shrinking: ponownie uruchamia test z coraz prostszymi wejściami, aż znajdzie minimalny reprodukowalny przypadek. Teraz dokładnie wiemy, co się stało: nasz kod nie obsługuje poprawnie tabów. Ten minimalny przypadek staje się punktem startowym dla naszego cyklu TDD.</aside>
+    </section>
+
+    <!-- Slide 13: The "Next Red Test" Generator (visual-split) -->
+    <section>
+      <h2>Generator "następnego czerwonego testu"</h2>
+      <ul class="timeline timeline-horizontal" style="font-size:0.6em; width:100%;">
+          <li>
+            <div class="timeline-start timeline-box" style="border-color:var(--solarized-red);">Test właściwości znajduje kontrprzykład: <code>"\t"</code></div>
+            <div class="timeline-middle" style="color:var(--solarized-red);">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="timeline-end" style="color:var(--solarized-red); font-weight:bold;">Red</div>
+            <hr/>
+          </li>
+          <li>
+            <hr/>
+            <div class="timeline-start timeline-box" style="border-color:var(--solarized-red);">Wyodrębnij go do <strong>utrwalonego testu jednostkowego</strong></div>
+            <div class="timeline-middle" style="color:var(--solarized-red);">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="timeline-end" style="color:var(--solarized-red); font-weight:bold;">Red</div>
+            <hr/>
+          </li>
+          <li>
+            <hr/>
+            <div class="timeline-start timeline-box" style="border-color:var(--solarized-green);">Popraw kod, żeby test przechodził</div>
+            <div class="timeline-middle" style="color:var(--solarized-green);">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="timeline-end" style="color:var(--solarized-green); font-weight:bold;">Green</div>
+            <hr/>
+          </li>
+          <li>
+            <hr/>
+            <div class="timeline-start timeline-box" style="border-color:var(--solarized-blue);">Refaktor i dalsza praca</div>
+            <div class="timeline-middle" style="color:var(--solarized-blue);">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="timeline-end" style="color:var(--solarized-blue); font-weight:bold;">Refactor</div>
+          </li>
+        </ul>
+      <aside class="notes">W workflow TDD używamy tych odkryć, żeby napędzać postęp. Kiedy Property Testing znajduje kontrprzykład, nie poprawiaj od razu kodu. Najpierw wyodrębnij ten konkretny przypadek do osobnego testu jednostkowego. Testy właściwości uruchamiają się za każdym razem z innymi seedami, więc utrwalamy regresję. To tworzy pomost między testowaniem generatywnym a naszym stałym zestawem testów regresyjnych. A teraz zobaczmy, jak Property Testing radzi sobie z czymś bardziej złożonym.</aside>
+    </section>
+
+    <!-- Slide 15: The Undo Invariant: Editor Commands (code) -->
+    <section>
+      <h2>Przykład: edytor z Undo</h2>
+      <div class="bento-card" style="display:flex; align-items:center; gap:1em; margin-bottom:0.8em;">
+        <span style="font-size:1.6em;">🔄</span>
+        <p style="margin:0;">Edytor tekstu, który przyjmuje różne komendy i wspiera operacje undo oraz redo.</p>
+      </div>
+      <pre><code class="language-typescript" data-line-numbers="1-5|7-15">type Command =
+  | { type: 'insert', position: number, text: string }
+  | { type: 'delete', start: number, end: number }
+  | { type: 'replace', start: number, end: number, text: string }
+  | { type: 'truncate', length: number };
+
+const commandArb = fc.oneof(
+  fc.record({ type: fc.constant('insert'),
+              position: fc.nat(), text: fc.string() }),
+  fc.record({ type: fc.constant('delete'),
+              start: fc.nat(), end: fc.nat() }),
+  fc.record({ type: fc.constant('replace'),
+              start: fc.nat(), end: fc.nat(), text: fc.string() }),
+  fc.record({ type: fc.constant('truncate'),
+              length: fc.nat() })
+);</code></pre>
+      <aside class="notes">Wyobraźcie sobie, że testujemy edytor tekstu z komendami Insert, Delete, Replace i Truncate, z których każda wspiera Undo. Ręczne kodowanie każdej permutacji operacji to koszmar. Zamiast tego generujemy losowe sekwencje komend. A teraz sama właściwość.</aside>
+    </section>
+
+    <!-- Slide 16: Testing Thousands of User Flows (code) -->
+    <section>
+      <h2>Tysiące przypadków brzegowych w jednym teście</h2>
+      <pre><code class="language-typescript" data-line-numbers="1-13|3-4|6-7|9-11|12">test('undoing all actions restores initial state', () => {
+  fc.assert(
+    fc.property(
+      fc.array(commandArb, { minLength: 1, maxLength: 20 }),
+      (commands) => {
+        const editor = new Editor();
+        const initialState = editor.getContent();
+
+        commands.forEach(cmd => editor.execute(cmd));
+        commands.forEach(() => editor.undo());
+
+        expect(editor.getContent()).toBe(initialState);
+      }
+    )
+  );
+});</code></pre>
+      <aside class="notes">Właśnie przetestowaliśmy tysiące ścieżek użytkownika w około 20 linijkach kodu. Komentarz pokazuje eksplozję kombinatoryczną: już dla 3 operacji mamy niemal 370 000 permutacji. Przy 100 operacjach to 1.6 razy 10 do potęgi 60. Żadna liczba ręcznie pisanych testów nie jest w stanie z tym konkurować. Property Testing może też pomóc przy migracji systemów legacy.</aside>
+    </section>
+
+    <!-- Slide 17: Differential Testing: Legacy vs New (visual-split) -->
+    <!-- <section>
+      <h2>Przykład: stare vs nowe</h2>
+      <div class="columns" style="margin-bottom:1em;">
+        <div class="column">
+          <div class="bento-card" style="border-color:var(--solarized-red); height:100%; display:flex; flex-direction:column; justify-content:center;">
+            <h3 style="color:var(--solarized-red);">System legacy</h3>
+            <p>Stary i zardzewiały, ale sprawdzony w boju.</p>
+          </div>
+        </div>
+        <div class="column">
+          <div class="bento-card" style="border-color:var(--solarized-green); height:100%; display:flex; flex-direction:column; justify-content:center;">
+            <h3 style="color:var(--solarized-green);">Nowa aplikacja</h3>
+            <p>Nowa i błyszcząca, ale jeszcze nieudowodniona.</p>
+          </div>
+        </div>
+      </div>
+      <p style="text-align:center; font-size:1.1em;">Jak sprawdzić, że nowa wersja jest <strong>wstecznie kompatybilna</strong>?</p>
+      <aside class="notes">To kolejny potężny wzorzec: differential testing, nazywany też oracle testing. Mamy legacy service do credit score uruchomiony w Dockerze i nową bibliotekę TypeScript, która ma go zastąpić. Własność jest prosta: dla wszystkich poprawnych wejść obie implementacje muszą zwrócić ten sam wynik. Zobaczmy kod.</aside>
+    </section> -->
+
+    <!-- Slide 18: Differential Test in Action (code) -->
+    <!-- <section>
+      <h2>Differential Test w praktyce</h2>
+      <pre><code class="language-typescript" data-line-numbers="1-5|7-16">const userDataArb = fc.record({
+  age: fc.integer({ min: 18, max: 100 }),
+  income: fc.integer({ min: 0, max: 1_000_000 }),
+  debt: fc.integer({ min: 0, max: 1_000_000 }),
+  employmentYears: fc.integer({ min: 0, max: 50 }),
+});
+
+it('new library matches legacy service', async () => {
+  await fc.assert(
+    fc.asyncProperty(userDataArb, async (userData) => {
+      const legacyScore = await callLegacyService(userData);
+      const newScore = calculateCreditScore(userData);
+      expect(newScore).toBe(legacyScore);
+    }),
+    { numRuns: 100 }
+  );
+});</code></pre>
+      <aside class="notes">Definiujemy Arbitrary dla UserData z realistycznymi ograniczeniami. Następnie dla każdego wygenerowanego wejścia wywołujemy legacy REST service działający w kontenerze Dockera przez testcontainers, wywołujemy naszą nową bibliotekę i sprawdzamy, czy wyniki są takie same. 100 losowych poprawnych wejść, zweryfikowanych automatycznie. To niezwykle potężne przy bezpiecznych migracjach. Została jeszcze jedna ukryta właściwość, którą często pomijamy.</aside>
+    </section> -->
+
+    <!-- Slide 20: The Greatest Hidden Property (visual-split) -->
+    <section>
+      <h2>Najważniejsza ukryta właściwość</h2>
+      <div class="columns">
+        <div class="column">
+          <div class="bento-card" style="height:100%; display:flex; flex-direction:column; justify-content:center;">
+            <h3>Fuzzing</h3>
+            <p>"Kod nie powinien się wysypywać" to też właściwość. W testach jednostkowych wejścia są <em>bezpieczne</em>; w testach właściwości wejścia są <strong>dzikie</strong></p>
+          </div>
+        </div>
+        <div class="column">
+          <div class="bento-card" style="height:100%; display:flex; flex-direction:column; justify-content:center; border-color:var(--solarized-orange);">
+            <h3>Nieznane bazy kodu</h3>
+            <p>Szczególnie wartościowe, gdy kod nie jest dobrze znany: <strong>systemy legacy</strong> i <strong>kod generowany przez AI</strong></p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">Jest jedna właściwość, której często nawet nie zapisujemy: kod nie powinien się wysypywać. W testach jednostkowych to nudne, bo nasze wejścia są bezpieczne. W Property Testing wejścia są dzikie. Samo sprawdzenie, że nasza funkcja nie rzuca wyjątku przy chaotycznych danych, nazywa się fuzzing. To niesamowicie wartościowe dla kodu legacy albo kodu generowanego przez LLM-y, gdzie możemy nie znać oczekiwanego wyniku, ale na pewno wiemy, że NullPointerException oznacza porażkę. Złóżmy to wszystko w całość.</aside>
+    </section>
+
+    <!-- Slide 20: Case for Property Testing + TDD in AI Era -->
+    <section>
+      <h2>Dlaczego Property Testing + TDD ma sens w erze AI</h2>
+      <div class="bento-grid three-columns">
+        <div class="bento-card" style="border-color:var(--solarized-blue);">
+          <h3 style="color:var(--solarized-blue);">Testowanie jest ważniejsze niż kiedykolwiek</h3>
+          <p>Przy generowaniu kodu przez AI weryfikacja poprawności jest krytyczna</p>
+        </div>
+        <div class="bento-card" style="border-color:var(--solarized-red);">
+          <h3 style="color:var(--solarized-red);">LLMy mają te same martwe pola co ludzie</h3>
+          <p>Intuicyjnie pomijają ważne przypadki testowe i wybierają testy, które przejdą</p>
+        </div>
+        <div class="bento-card" style="border-color:var(--solarized-green);">
+          <h3 style="color:var(--solarized-green);">Property Testing + TDD pomaga</h3>
+          <p>Ogranicza pułapki kodu generowanego przez AI dzięki testowaniu nie przykładów, lecz niezmienników</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 22: Key Takeaways -->
+    <!-- <section>
+      <section>
+        <h2>Najważniejsze wnioski</h2>
+        <div class="bento-card" style="font-size:1.1em; text-align:center; padding:1.5em;">
+          <h3>Wymagania są właściwościami</h3>
+          <p>Myśl o wymaganiach jak o niezmiennikach i testuj je właśnie w ten sposób</p>
+        </div>
+      </section>
+      <section>
+        <h2>Najważniejsze wnioski</h2>
+        <div class="columns">
+          <div class="column">
+            <div class="bento-card" style="height:100%; display:flex; flex-direction:column; justify-content:center; border-color:var(--solarized-cyan);">
+              <h3>Testy właściwości <strong>eksplorują</strong></h3>
+              <p>Generują setki wejść, żeby polować na edge case'y, których nigdy byś nie wymyślił</p>
+            </div>
+          </div>
+          <div class="column">
+            <div class="bento-card" style="height:100%; display:flex; flex-direction:column; justify-content:center; border-color:var(--solarized-orange);">
+              <h3>Testy jednostkowe <strong>utrwalają</strong></h3>
+              <p>Przypinają konkretne kontrprzykłady jako stałe testy regresyjne</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section>
+        <h2>Najważniejsze wnioski</h2>
+        <div class="columns">
+          <div class="column">
+            <div class="bento-card" style="height:100%; display:flex; flex-direction:column; justify-content:center; border-color:var(--solarized-orange);">
+              <h3>Testy jednostkowe</h3>
+              <p>Świetne, gdy liczą się <strong>konkretne przykłady</strong>: znane I/O, logika biznesowa</p>
+            </div>
+          </div>
+          <div class="column">
+            <div class="bento-card" style="height:100%; display:flex; flex-direction:column; justify-content:center; border-color:var(--solarized-cyan);">
+              <h3>Testy właściwości</h3>
+              <p>Świetne, gdy liczą się <strong>ogólne właściwości</strong>: ogromna przestrzeń wejść, niezmienniki</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section>
+        <h2>Najważniejsze wnioski</h2>
+        <div class="bento-card" style="font-size:1.1em; text-align:center; padding:1.5em; border-color:var(--solarized-green);">
+          <h3 style="color:var(--solarized-green);">Property Testing + TDD w erze AI</h3>
+          <p>Ogranicza pułapki kodu generowanego przez AI dzięki testowaniu nie przykładów, lecz niezmienników</p>
+        </div>
+        <aside class="notes">Property Testing sprawia, że nasze zestawy testów są mocniejsze, czytelniejsze i znacząco łatwiejsze w utrzymaniu. Nie zastępuje testów jednostkowych; uzupełnia je. Myślcie o wymaganiach jak o właściwościach, pozwólcie bibliotece eksplorować przestrzeń wejść i przypinajcie odkrycia jako testy regresyjne. Dziękuję.</aside>
+      </section>
+    </section> -->
+
+    <!-- Slide 23: Thank you -->
+    <section class="section-title">
+      <h1>Dziękuję!</h1>
+      <h2>Pytania?</h2>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js-mermaid-plugin@2/plugin/mermaid/mermaid.js"></script>
+<script>
+  Reveal.initialize({
+    center: false,
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    plugins: [RevealNotes, RevealHighlight, RevealMermaid],
+    mermaid: { theme: 'neutral', flowchart: { curve: 'linear' } }
+  });
+</script>
+</body>
+</html>
